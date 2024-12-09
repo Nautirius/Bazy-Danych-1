@@ -1,0 +1,37 @@
+#include <stdio.h>
+#include "test.h"
+
+EXEC SQL BEGIN DECLARE SECTION;
+    char db[200];
+    char usr[15];
+    char pas[30];
+    char dbname[1024];
+    int id;
+    char nazwisko[20];
+    double wynagrodzenie;
+EXEC SQL END DECLARE SECTION;
+
+int main()
+{
+    strncpy(db,dbase,200);
+    strncpy(usr,user,15);
+    strncpy(pas,pass,30);
+    ECPGdebug(1,stderr); //enable the debug output
+    EXEC SQL CONNECT TO :db AS con1  USER :usr USING :pas;
+
+    EXEC SQL SELECT current_database() INTO :dbname;
+    printf("current database=%s \n", dbname);
+
+    EXEC SQL SELECT wykladowca_id, nazwisko, wynagrodzenie INTO :id, :nazwisko, :wynagrodzenie FROM lab08.wykladowca LIMIT 1;
+
+    if (sqlca.sqlcode == 0 )
+        printf("%d  %s  %lf\n",id,nazwisko,wynagrodzenie);
+    else
+    {   printf(" SQLCA.SQLCODE: %i\n", sqlca.sqlcode);
+        printf(" SQLCA.SQLSTATE: %s\n", sqlca.sqlstate);
+        printf(" SQLCA.SQLERRM: %i  %s\n", sqlca.sqlerrm.sqlerrml, sqlca.sqlerrm.sqlerrmc);
+    }
+
+    EXEC SQL DISCONNECT ALL;
+    return 0;
+}

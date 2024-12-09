@@ -1,0 +1,14 @@
+liczba tabel nie ma znaczenia
+nie musi być po polsku (byle by spójne)
+dokumentacja (ważne - niezbędne)
+
+wyzwalacze do kontroli spójności na ocenę 4
+
+różne poziomy dostępu - można na poziomie dostępu z klienta (można pominąć - bez sensu bo to nie o bazie danych)
+
+dokumentacja:
+- analiza wymagań - rozmowa z klientem (co baza ma robić dla użytkownika, funkcje bazy danych - funkcje, które mają to zrealizować)
+- najpierw wymagania, potem realizacja (najpierw cele, potem jak zostały zrealizowane)
+- bez dokumentacji projekt nie jest oceniany
+
+można pokazać projekt erd projektu (konsultacja)

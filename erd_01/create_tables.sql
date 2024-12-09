@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS erd_01.Przystanek (
 
 CREATE TABLE IF NOT EXISTS erd_01.Trasa (
     id_trasy SERIAL PRIMARY KEY,
-    id_linii INT REFERENCES erd_01.Linia(id_linii),
+    id_linii INT NOT NULL REFERENCES erd_01.Linia(id_linii),
     nazwa VARCHAR(50),
     typ_dni VARCHAR(20) NOT NULL CHECK (typ_dni IN ('dni_robocze', 'weekend', 'święta')),
     UNIQUE (id_linii, nazwa)  -- Unikalna nazwa trasy dla danej linii

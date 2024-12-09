@@ -1,0 +1,101 @@
+używając embedded sql (ecpg) napisz program .sqc, który:
+W ramach zadania należy opracować funkcję w języku C(embededSQL), która umożliwi pobranie danych z zapytania SQL. Program ma mieć argument wywołania- id wykładowcy (wykladowca_id). Dodatkowo dla każdego kursu prowadzonego przez wykładowcę, należy wypisać wykładowców, którzy ten kurs również prowadzą/prowadzili - informacje mają być wypisane w postaci dokumentu w formacie JSON.
+przykładowe wyjście JSON:
+[{"kurs":"nazwa_1","ilosc_prowadzacych":2, "prowadzacy":[{"imie":"Imie_1", "nazwiko":"Nazwisko_1"},{"imie":"Imie_2", "nazwisko":"Nazwisko_2"}],"stan":"ukonczony"} ,
+{"kurs":"nazwa_2","ilosc_prowadzacychw":1, "prowadzacy":[{"imie":"Imie_1", "nazwisko":"Nazwisko_1"}], "stan":"ukonczony"},
+{"kurs":"nazwa_3","ilosc_prowadzacych":3, "prowadzacy":[{"imie":"Imie_1", "nazwisko":"Nazwisko_1"},{"imie":"Imie_22", "nazwisko":"Nazwisko_22"},{"imie":"Imie_33", "nazwisko":"Nazwisko_33"}],"stan":"nieukonczony"}]
+
+tablice w bazie danych:
+CREATE SCHEMA IF NOT EXISTS lab08;
+
+-- tworzenie tabel
+CREATE TABLE lab08.instytut (
+    instytut_id INTEGER PRIMARY KEY,
+    nazwa TEXT NOT NULL,
+    lokal TEXT NOT NULL
+);
+
+CREATE TABLE lab08.funkcja (
+    funkcja_id INTEGER PRIMARY KEY,
+    nazwa TEXT UNIQUE NOT NULL,
+    min_wynagrodzenia INTEGER NOT NULL CHECK (min_wynagrodzenia > 0),
+    max_wynagrodzenia INTEGER NOT NULL CHECK (max_wynagrodzenia > min_wynagrodzenia)
+);
+
+CREATE TABLE lab08.wykladowca (
+    wykladowca_id INTEGER PRIMARY KEY,
+    nazwisko TEXT NOT NULL,
+    manager_id INTEGER,
+    rok_zatrudnienia INTEGER NOT NULL,
+    wynagrodzenie INTEGER CHECK (wynagrodzenie >= 1000),
+    instytut_id INTEGER,
+    FOREIGN KEY (instytut_id) REFERENCES lab08.instytut(instytut_id),
+    FOREIGN KEY (manager_id) REFERENCES lab08.wykladowca(wykladowca_id)
+);
+ALTER TABLE lab08.wykladowca ADD COLUMN premia REAL DEFAULT 0 CHECK (premia BETWEEN 0.0 AND 100.0); --dodajemy
+
+
+CREATE TABLE lab08.kurs (
+    kurs_id INTEGER PRIMARY KEY,
+    nazwa TEXT NOT NULL,
+    start DATE NOT NULL,
+    koniec DATE
+);
+
+CREATE TABLE lab08.zajecia(
+    wykladowca_id INTEGER NOT NULL,
+    kurs_id INTEGER NOT NULL,
+    PRIMARY KEY (wykladowca_id, kurs_id),
+    FOREIGN KEY (wykladowca_id) REFERENCES lab08.wykladowca(wykladowca_id),
+    FOREIGN KEY (kurs_id) REFERENCES lab08.kurs(kurs_id)
+);
+
+konfiguracja embedded sql:
+
+test.h
+
+#define dbase "postgres@pleadingly-credible-owl.data-1.euc1.tembo.io" //nazwa hosta
+#define user "postgres"//nazwa bazy danych/uzytkownika
+#define pass "aaaaa"//hasło
+
+przykładowy plik .sqc
+#include <stdio.h>
+#include "test.h"
+
+EXEC SQL BEGIN DECLARE SECTION;
+    char db[200];
+    char usr[15];
+    char pas[30];
+    char dbname[1024];
+    int id;
+    char nazwisko[20];
+    double wynagrodzenie;
+EXEC SQL END DECLARE SECTION;
+
+int main()
+{
+    strncpy(db,dbase,200);
+    strncpy(usr,user,15);
+    strncpy(pas,pass,30);
+    ECPGdebug(1,stderr); //enable the debug output
+    EXEC SQL CONNECT TO :db AS con1  USER :usr USING :pas;
+
+    EXEC SQL SELECT current_database() INTO :dbname;
+    printf("current database=%s \n", dbname);
+
+    EXEC SQL SELECT wykladowca_id, nazwisko, wynagrodzenie INTO :id, :nazwisko, :wynagrodzenie FROM lab08.wykladowca LIMIT 1;
+
+    printf("%d  %s  %lf\n",id,nazwisko,wynagrodzenie);
+
+    EXEC SQL DISCONNECT ALL;
+    return 0;
+}
+
+kurs nieukończony to taki, który nie ma podanej daty zakończenia, albo data zakończenia następuje w przyszłości (po aktualnej dacie)
+
+wyjscie ma byc postaci:
+[{"kurs":"nazwa_1","ilosc_prowadzacych":2, "prowadzacy":[{"imie":"Imie_1", "nazwiko":"Nazwisko_1"},{"imie":"Imie_2", "nazwisko":"Nazwisko_2"}],"stan":"ukonczony"} ,
+{"kurs":"nazwa_2","ilosc_prowadzacychw":1, "prowadzacy":[{"imie":"Imie_1", "nazwisko":"Nazwisko_1"}], "stan":"ukonczony"},
+{"kurs":"nazwa_3","ilosc_prowadzacych":3, "prowadzacy":[{"imie":"Imie_1", "nazwisko":"Nazwisko_1"},{"imie":"Imie_22", "nazwisko":"Nazwisko_22"},{"imie":"Imie_33", "nazwisko":"Nazwisko_33"}],"stan":"nieukonczony"}]
+
+gdzie "ilosc_prowadzacych" to liczba wykładowców prowadzących zajęcia, a "prowadzący" to tablica z danymi o prowadzących

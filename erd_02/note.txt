@@ -1,0 +1,16 @@
+Proszę opracować schemat bazy danych dla drzewa genealogicznego. Baza zawiera informacje o osobach (imię, nazwisko, data urodzenia, miejsce urodzenia, dla osób nieżyjących - data zgonu), informacje o pokrewieństwie oraz informacje o małżeństwach.
+Zapytania do bazy danych dla wybranej osoby:
+
+ informacje o niej,
+ informacje o rodzicach,
+czy posiada dzieci, jeżeli tak to podać ich imiona.
+Poprawność przedstawionych zapytań proszę przetestować w przykładowej bazie danych – ilość wprowadzonych danych powinna pozwolić na efektywna realizację zapytań.
+
+Należy przesłać plik .sql zawierający kwerendy tworzące bazę danych (CREATE TABLE), wypełniające danymi ( INSERT  INTO), oraz realizujące zapytania. (SELECT).
+
+
+
+
+każdy ma 2 rodziców (oprócz protoplasty)
+płeć nie ma znaczenia (może nie być info wgl)
+można być w związku z jedną osobą (małżeństwo) na raz, ale na przestzeni lat można zmieniać

@@ -1,0 +1,61 @@
+#include <stdio.h>
+#include "test.h"
+
+EXEC SQL BEGIN DECLARE SECTION;
+    char db[200];
+    char usr[15];
+    char pas[30];
+    int id;
+    char nazwisko[50];
+    double wynagrodzenie;
+EXEC SQL END DECLARE SECTION;
+
+int main()
+{
+    // Konfiguracja danych połączenia
+    strncpy(db, dbase, 200);
+    strncpy(usr, user, 15);
+    strncpy(pas, pass, 30);
+
+    // Włącz debugowanie
+    ECPGdebug(1, stderr);
+
+    // Połączenie z bazą danych
+    EXEC SQL CONNECT TO :db AS con1 USER :usr USING :pas;
+
+    if (sqlca.sqlcode != 0) {
+        printf("Błąd podczas połączenia z bazą danych: %s\n", sqlca.sqlerrm.sqlerrmc);
+        return 1;
+    }
+
+    printf("Połączono z bazą danych.\n");
+
+    // Deklaracja kursora do przeglądania tabeli
+    EXEC SQL DECLARE wykladowca_cursor CURSOR FOR
+        SELECT wykladowca_id, nazwisko, wynagrodzenie
+        FROM lab08.wykladowca;
+
+    // Otwarcie kursora
+    EXEC SQL OPEN wykladowca_cursor;
+
+    // Pętla przetwarzająca rekordy
+    while (1) {
+        EXEC SQL FETCH wykladowca_cursor INTO :id, :nazwisko, :wynagrodzenie;
+        if (sqlca.sqlcode == 100) { // Brak więcej wierszy
+            break;
+        } else if (sqlca.sqlcode != 0) {
+            printf("Błąd podczas FETCH: %s\n", sqlca.sqlerrm.sqlerrmc);
+            break;
+        }
+        printf("ID: %d, Nazwisko: %s, Wynagrodzenie: %.2f\n", id, nazwisko, wynagrodzenie);
+    }
+
+    // Zamknięcie kursora
+    EXEC SQL CLOSE wykladowca_cursor;
+
+    // Rozłączenie z bazą danych
+    EXEC SQL DISCONNECT ALL;
+
+    printf("Zakończono działanie programu.\n");
+    return 0;
+}

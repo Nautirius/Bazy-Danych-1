@@ -1,0 +1,23 @@
+#include <stdio.h>
+#include "test.h"
+//rozwiazanie z komentarza nie ogranicza długosci stringow reprezentujacych nazwy
+EXEC SQL BEGIN DECLARE SECTION;
+    char dbname[1024];
+    char db[200];//*db
+    char usr[15];//*usr
+    char pas[30];//*pas
+EXEC SQL END DECLARE SECTION;
+
+int main()
+{ //rozwiazanie z komentarza nie ogranicza długosci stringow reprezentujacych nazwy
+    strncpy(db,dbase,200);//db = dbase
+    strncpy(usr,user,15);//usr = user
+    strncpy(pas,pass,30);//pas = pass
+    EXEC SQL CONNECT TO :db AS con1 USER :usr USING :pas;
+
+    EXEC SQL SELECT current_database() INTO :dbname;
+    printf("current database=%s \n", dbname);
+
+    EXEC SQL DISCONNECT ALL;
+    return 0;
+}

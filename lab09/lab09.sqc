@@ -1,0 +1,131 @@
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include "test.h"
+
+EXEC SQL BEGIN DECLARE SECTION;
+    char db[200];
+    char usr[15];
+    char pas[30];
+    int wykladowca_id;
+    int kurs_id;
+    char kurs_nazwa[100];
+    char start[20];
+    char koniec[20];
+    int prowadzacy_id;
+    char prowadzacy_imie[50];
+    char prowadzacy_nazwisko[50];
+    char stan[15];
+    int ilosc_prowadzacych;
+    char today[20];
+EXEC SQL END DECLARE SECTION;
+
+void check_stan_kursu(char *koniec, char *stan) {
+    if (strlen(koniec) == 0) { // Brak daty konca oznacza kurs nieukonczony
+        strcpy(stan, "nieukonczony");
+    } else {
+        EXEC SQL SELECT TO_CHAR(CURRENT_DATE, 'YYYY-MM-DD') INTO :today;
+        if (strcmp(koniec, today) > 0) {
+            strcpy(stan, "nieukonczony");
+        } else {
+            strcpy(stan, "ukonczony");
+        }
+    }
+}
+
+int main(int argc, char *argv[])
+{
+    if (argc < 2) {
+        printf("Uzycie: %s <wykladowca_id>\n", argv[0]);
+        return 1;
+    }
+
+    wykladowca_id = atoi(argv[1]);
+
+    strncpy(db, dbase, 200);
+    strncpy(usr, user, 15);
+    strncpy(pas, pass, 30);
+
+    //ECPGdebug(1, stderr);
+
+    EXEC SQL CONNECT TO :db AS con1 USER :usr USING :pas;
+
+    printf("[\n");
+
+    // Kursy prowadzone przez wykladowce
+    EXEC SQL DECLARE kurs_cursor CURSOR FOR
+        SELECT k.kurs_id, k.nazwa, TO_CHAR(k.start, 'YYYY-MM-DD'),
+               COALESCE(TO_CHAR(k.koniec, 'YYYY-MM-DD'), '')
+        FROM lab09.kurs k
+        JOIN lab09.zajecia z ON z.kurs_id = k.kurs_id
+        WHERE z.wykladowca_id = :wykladowca_id;
+
+    EXEC SQL OPEN kurs_cursor;
+
+    int kurs_counter = 0;
+
+    while (1) {
+        EXEC SQL FETCH kurs_cursor INTO :kurs_id, :kurs_nazwa, :start, :koniec;
+        if (sqlca.sqlcode == 100) {
+            break;
+        } else if (sqlca.sqlcode != 0) {
+            printf("Blad podczas FETCH: %s\n", sqlca.sqlerrm.sqlerrmc);
+            break;
+        }
+
+        check_stan_kursu(koniec, stan);
+
+        if (kurs_counter > 0) {
+            printf(",\n");
+        }
+
+        // Liczba prowadzacych kurs
+        EXEC SQL SELECT COUNT(*) INTO :ilosc_prowadzacych
+            FROM lab09.zajecia
+            WHERE kurs_id = :kurs_id;
+
+        printf("  {\n    \"kurs\": \"%s\",\n    \"ilosc_prowadzacych\": %d,\n    \"prowadzacy\": [",
+               kurs_nazwa, ilosc_prowadzacych);
+
+        // Dane prowadzacych dany kurs
+        EXEC SQL DECLARE prowadzacy_cursor CURSOR FOR
+            SELECT w.nazwisko, w.imie
+            FROM lab09.wykladowca w
+            JOIN lab09.zajecia z ON z.wykladowca_id = w.wykladowca_id
+            WHERE z.kurs_id = :kurs_id;
+
+        EXEC SQL OPEN prowadzacy_cursor;
+
+        int prowadzacy_counter = 0;
+
+        while (1) {
+            EXEC SQL FETCH prowadzacy_cursor INTO :prowadzacy_nazwisko, :prowadzacy_imie;
+            if (sqlca.sqlcode == 100) {
+                break;
+            } else if (sqlca.sqlcode != 0) {
+                printf("Blad podczas FETCH: %s\n", sqlca.sqlerrm.sqlerrmc);
+                break;
+            }
+
+            if (prowadzacy_counter > 0) {
+                printf(", ");
+            }
+            printf("{\"imie\": \"%s\", \"nazwisko\": \"%s\"}", prowadzacy_imie, prowadzacy_nazwisko);
+            prowadzacy_counter++;
+        }
+
+        EXEC SQL CLOSE prowadzacy_cursor;
+
+        printf("],\n    \"stan\": \"%s\"\n  }", stan);
+
+        kurs_counter++;
+    }
+
+    EXEC SQL CLOSE kurs_cursor;
+
+    printf("\n]\n");
+
+    EXEC SQL DISCONNECT ALL;
+
+    return 0;
+}
