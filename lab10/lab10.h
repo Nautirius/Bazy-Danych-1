@@ -1,0 +1,5 @@
+#define labdbname "postgres"
+#define labdbuser "postgres"
+#define labdbpass "mPGUWC9zbxjWGNOK"
+#define labdbhost "pleadingly-credible-owl.data-1.euc1.tembo.io"
+#define labdbport "5432"

@@ -1,0 +1,103 @@
+plik w c lub cpp i plik .h z danymi do połączenia do bazy danych
+funkcje type - typeid typu (mają być odpowiednie typy)
+
+w języku c funkcja taka, by można było wysłać dowolne zapytanie select do bazy danych i przedstawić wynik w postaci pliku json
+
+przetestowane dla dwóch dowolnych zpytań (Select z where), jedno pytanie ze złączeniem
+
+argument funkcji to string z poleceniem do wywołania
+
+w funkcji main mają być wywołane przykłady.
+Funkcja ma być uniwersalna (zmienna ilość atrybutów w wywołaniu - select dla zmiennej ilości pól)
+
+W ramach zadania należy opracować funkcję w języku C, która umożliwi pobranie danych z dowolnego zapytania SQL i przedstawienie ich w postaci dokumentu w formacie JSON.
+
+Struktura danych JSON to tabela z rekordami jako obiekty. Nazwy atrybutów z odpowiedzi zapytania SQL są nazwami atrybutów w dokumencie JSON.
+Struktura wygenerowanego dokumentu: [{"atr1":"wart1","atr2":"wart2", itd.}, ...,{ ... }].
+
+Poprawne wykonanie zadania wymaga zaprezentowania poprawności funkcji poprzez realizację testów na zadaniowej bazie danych
+
+Poniżej przykładowy dokument w formacie JSON dla zapytania :
+przekazane do funkcji polecenie:
+SELECT * FROM person.
+
+funkcja zwraca:
+[{ "id":"10", "fname":"Adam", "lname":"Dadacki"},
+ { "id":"31", "fname":"Anna", "lname":"Abacka"},
+ { "id":"66", "fname":"Krystyna", "lname":"Babacka"}]
+
+
+Poniżej przykładowy dokument w formacie JSON dla zapytania :
+przekazane do funkcji polecenie:
+SELECT orderinfo_id, c.customer_id_date_placed,_date_shipped, shipping  FROM customer c, orderinfo o WHERE c.customer_id = o.customer_id;.
+
+funkcja zwraca:
+[{"orderinfo_id":1,"customer_id":3,"date_placed":"2000-03-13","date_shipped":"2000-03-17","shipping":2.99} ,
+{"orderinfo_id":2,"customer_id":8,"date_placed":"2000-06-23","date_shipped":"2000-06-24","shipping":0.00} ,
+{"orderinfo_id":3,"customer_id":15,"date_placed":"2000-09-02","date_shipped":"2000-09-12","shipping":3.99} ,
+{"orderinfo_id":4,"customer_id":13,"date_placed":"2000-09-03","date_shipped":"2000-09-10","shipping":2.99} ,
+{"orderinfo_id":5,"customer_id":8,"date_placed":"2000-07-21","date_shipped":"2000-07-24","shipping":0.00}]
+
+przykład programu w języku c:
+#include <stdlib.h>
+#include <libpq-fe.h>
+#include <stdio.h>
+
+
+/* for ntohl/htonl */
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
+int main(){
+  PGresult *result;
+  PGconn *conn;
+  const char *paramValues[1];
+  int         paramLengths[1];
+  int         paramFormats[1];
+  uint32_t    binaryIntVal;
+  const char *connection_str = "host=localhost port=5432 dbname=*** user=*** password=***";
+  conn = PQconnectdb(connection_str);
+  if (PQstatus(conn) == CONNECTION_BAD) {
+    fprintf(stderr, "Connection to %s failed, %s", connection_str,PQerrorMessage(conn));
+  } else {
+    printf("Connected OK\n");
+
+/* Convert integer value "31" to network byte order */
+    binaryIntVal = htonl((uint32_t) 31);
+    // binaryIntVal = ((uint32_t) 31);
+
+    /* Set up parameter arrays for PQexecParams */
+    paramValues[0] = (char *) &binaryIntVal;
+    paramLengths[0] = sizeof(binaryIntVal);
+    paramFormats[0] = 1;        /* binary */
+
+    result = PQexecParams(conn, "SELECT * FROM lab10.person WHERE id = $1::int4",
+                       1,       /* one param */
+                       NULL,    /* let the backend deduce param type */
+                       paramValues,
+                       paramLengths,
+                       paramFormats,
+                       0);      /* ask for binary results */
+
+    if (PQresultStatus(result) != PGRES_TUPLES_OK)
+    {
+        fprintf(stderr, "SELECT failed: %s", PQerrorMessage(conn));
+        PQclear(result);
+    } else {
+      int n = 0, r = 0;
+      int nrows   = PQntuples(result);
+      int nfields = PQnfields(result);
+      printf("number of rows returned = %d\n", nrows);
+      printf("number of fields returned = %d\n", nfields);
+      for(r = 0; r < nrows; r++) {
+        for(n = 0; n < nfields; n++)
+           printf(" %s = %s", PQfname(result, n),PQgetvalue(result,r,n));
+        printf("\n");
+      }
+    }
+    PQfinish(conn);
+    return EXIT_SUCCESS;
+ }
+}
+
+przy wypisywaniu wyników chcę mieć dostęp do informacji o typie pola tak, by móc je odpowiednio wypisać funkcją printf (np %d dla int, %lf dla double, %s dla text etc.)

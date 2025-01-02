@@ -1,20 +1,20 @@
-CREATE SCHEMA IF NOT EXISTS lab09;
+CREATE SCHEMA IF NOT EXISTS lab11;
 
 -- tworzenie tabel
-CREATE TABLE lab09.instytut (
+CREATE TABLE lab11.instytut (
     instytut_id INTEGER PRIMARY KEY,
     nazwa TEXT NOT NULL,
     lokal TEXT NOT NULL
 );
 
-CREATE TABLE lab09.funkcja (
+CREATE TABLE lab11.funkcja (
     funkcja_id INTEGER PRIMARY KEY,
     nazwa TEXT UNIQUE NOT NULL,
     min_wynagrodzenia INTEGER NOT NULL CHECK (min_wynagrodzenia > 0),
     max_wynagrodzenia INTEGER NOT NULL CHECK (max_wynagrodzenia > min_wynagrodzenia)
 );
 
-CREATE TABLE lab09.wykladowca (
+CREATE TABLE lab11.wykladowca (
     wykladowca_id INTEGER PRIMARY KEY,
     imie TEXT NOT NULL,
     nazwisko TEXT NOT NULL,
@@ -22,44 +22,35 @@ CREATE TABLE lab09.wykladowca (
     rok_zatrudnienia INTEGER NOT NULL,
     wynagrodzenie INTEGER CHECK (wynagrodzenie >= 1000),
     instytut_id INTEGER,
-    FOREIGN KEY (instytut_id) REFERENCES lab09.instytut(instytut_id),
-    FOREIGN KEY (manager_id) REFERENCES lab09.wykladowca(wykladowca_id)
+    FOREIGN KEY (instytut_id) REFERENCES lab11.instytut(instytut_id),
+    FOREIGN KEY (manager_id) REFERENCES lab11.wykladowca(wykladowca_id)
 );
-ALTER TABLE lab09.wykladowca ADD COLUMN premia REAL DEFAULT 0 CHECK (premia BETWEEN 0.0 AND 100.0); --dodajemy
+ALTER TABLE lab11.wykladowca ADD COLUMN premia REAL DEFAULT 0 CHECK (premia BETWEEN 0.0 AND 100.0); --dodajemy
 
 
-CREATE TABLE lab09.kurs (
+CREATE TABLE lab11.kurs (
     kurs_id INTEGER PRIMARY KEY,
     nazwa TEXT NOT NULL,
     start DATE NOT NULL,
     koniec DATE
 );
 
-CREATE TABLE lab09.zajecia(
+CREATE TABLE lab11.zajecia(
     wykladowca_id INTEGER NOT NULL,
     kurs_id INTEGER NOT NULL,
     PRIMARY KEY (wykladowca_id, kurs_id),
-    FOREIGN KEY (wykladowca_id) REFERENCES lab09.wykladowca(wykladowca_id),
-    FOREIGN KEY (kurs_id) REFERENCES lab09.kurs(kurs_id)
-);
-
---tabela koszty
-create table lab09.koszty
-    (wpis_id                        serial,
-    kurs_id                         integer,
-    wykladowcy                      integer not null, --ilosc wykladowców w kursie
-    koszt_plus                      numeric(7,2), --kwota, o która koszt kursu przekracza wartosc graniczna
-    CONSTRAINT                      koszt_pk PRIMARY KEY(wpis_id)
+    FOREIGN KEY (wykladowca_id) REFERENCES lab11.wykladowca(wykladowca_id),
+    FOREIGN KEY (kurs_id) REFERENCES lab11.kurs(kurs_id)
 );
 
 -- wypelnianie tabel wartosciami
-INSERT INTO lab09.instytut (instytut_id, nazwa, lokal)VALUES
+INSERT INTO lab11.instytut (instytut_id, nazwa, lokal)VALUES
 (1, 'Informatyki', 'D-17'),
 (2, 'Fizyki', 'D-10'),
 (3, 'Matematyki', 'B-9'),
 (4, 'Biologii', 'C-2');
 
-INSERT INTO lab09.wykladowca (wykladowca_id, imie, nazwisko, manager_id, rok_zatrudnienia, wynagrodzenie, instytut_id)VALUES
+INSERT INTO lab11.wykladowca (wykladowca_id, imie, nazwisko, manager_id, rok_zatrudnienia, wynagrodzenie, instytut_id)VALUES
 (1, 'Piotr', 'Adamski', 1, 2007, 3500, 2),
 (2, 'Adam','Wieczorak', NULL, 2012, 2200, 1),
 (3, 'Ewa','Sochoń', NULL, 2020, 3300, 1),
@@ -69,21 +60,22 @@ INSERT INTO lab09.wykladowca (wykladowca_id, imie, nazwisko, manager_id, rok_zat
 (7, 'Patryk','Świątek', NULL, 2009, 2200, 2),
 (8, 'Piotr','Maj', 1, 2010, 5120, 2),
 (9, 'Krzysztof','Stach', 1, 2006, 3570, 4),
-(10, 'Agnieszka','Lipa', 2, 2019, 2201, 3);
+(10, 'Agnieszka','Lipa', 2, 2019, 2201, 3),
+(11, 'Ewa','Lipa', 1, 2015, 2231, 3);
 
-INSERT INTO lab09.funkcja (funkcja_id, nazwa, min_wynagrodzenia, max_wynagrodzenia)VALUES
+INSERT INTO lab11.funkcja (funkcja_id, nazwa, min_wynagrodzenia, max_wynagrodzenia)VALUES
 (1, 'Asystent', 1000, 3500),
 (2, 'Doktor', 3501, 7000),
 (3, 'Profesor', 7001, 9000);
 
-INSERT INTO lab09.kurs (kurs_id, nazwa, start, koniec)VALUES
+INSERT INTO lab11.kurs (kurs_id, nazwa, start, koniec)VALUES
 (1, 'Matematyka', '2024-10-11', '2024-12-17'),
 (2, 'Informatyka', '2023-03-01', NULL),
 (3, 'Programowanie Proceduralne', '2022-11-01', '2022-12-01'),
 (4, 'Bazy Danych', '2023-07-03', NULL),
 (5, 'Analiza', '2023-09-04', '2023-12-06');
 
-INSERT INTO lab09.zajecia (wykladowca_id, kurs_id)VALUES
+INSERT INTO lab11.zajecia (wykladowca_id, kurs_id)VALUES
 (1, 1),
 (2, 1),
 (3, 2),
@@ -102,6 +94,23 @@ INSERT INTO lab09.zajecia (wykladowca_id, kurs_id)VALUES
 (1, 3),
 (1, 5);
 
-select * from pg_catalog.pg_type;
-
-select CAST(0.5 AS NUMERIC(10,4)) AS test_float;
+CREATE OR REPLACE FUNCTION lab11.get_courses_by_lecturer(id_wykladowca INTEGER)
+RETURNS TABLE (
+    nazwa_kursu TEXT,
+    data_rozpoczecia DATE,
+    czy_zakonczony BOOLEAN
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT
+        k.nazwa AS nazwa_kursu,
+        k.start AS data_rozpoczecia,
+        CASE
+            WHEN k.koniec IS NULL OR k.koniec >= CURRENT_DATE THEN FALSE
+            ELSE TRUE
+        END AS czy_zakonczony
+    FROM lab11.kurs k
+    JOIN lab11.zajecia z ON k.kurs_id = z.kurs_id
+    WHERE z.wykladowca_id = id_wykladowca;
+END;
+$$ LANGUAGE plpgsql;

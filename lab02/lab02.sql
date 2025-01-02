@@ -41,7 +41,7 @@ values(15,'Dziekan','wykladowca',null,2006,3200,'matematyki');
 
 select wyk.nazwisko,wyk.wynagrodzenie AS płaca,CAST(2024-wyk.rok_zatrudnienia AS INT) as staż 
 from lab02.wykładowca wyk
-inner join lab02.wykładowca kierownik on kierownik.wykładowca_id = wyk.kierownik_id ;
+inner join lab02.wykładowca kierownik on kierownik.wykładowca_id = wyk.kierownik_id
 order by wyk.funkcja, kierownik.nazwisko;
 
 select nazwisko, instytut, rok_zatrudnienia from lab02.wykładowca
