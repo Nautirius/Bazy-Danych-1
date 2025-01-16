@@ -1,0 +1,96 @@
+---Używając operatorów grupujących, funkcji rankingowych Należy skonstruować zapytania, których wynikiem jest:
+
+--zad1
+
+-- do zadnia możesz użyć funkcji grupujących typu GROUPING SETS, GROUP BY ROLLUP, GROUP BY CUBE, CROSSTAB, partycji obliczeniowych typu sum(wartosc) over (partition by pole)
+
+    nr_konta   |   typ   |      kategoria       |   sum
+-------------+---------+----------------------+----------
+ 11-11111111 | WPŁATA  | PENSJA               |  8150.00
+ 11-11111111 | WPŁATA  | UMOWA O DZIEŁO       |  1650.00
+ 11-11111111 | WPŁATA  |                      |  9800.00
+ 11-11111111 | WYPŁATA | RACHUNEK ZA PRĽD     |  -720.50
+ 11-11111111 | WYPŁATA | RACHUNEK ZA TELEFON  |  -550.00
+ 11-11111111 | WYPŁATA | WYPŁATA W BANKOMACIE | -1050.00
+ 11-11111111 | WYPŁATA |                      | -2320.50
+ 11-11111111 |         |                      |  7479.50
+ 22-22222222 | WPŁATA  | PENSJA               | 10080.00
+ 22-22222222 | WPŁATA  | UMOWA O DZIEŁO       |  1820.00
+ 22-22222222 | WPŁATA  |                      | 11900.00
+ 22-22222222 | WYPŁATA | RACHUNEK ZA PRĽD     |  -790.50
+ 22-22222222 | WYPŁATA | RACHUNEK ZA TELEFON  |  -560.00
+ 22-22222222 | WYPŁATA | WYPŁATA W BANKOMACIE | -1050.00
+ 22-22222222 | WYPŁATA |                      | -2400.50
+ 22-22222222 |         |                      |  9499.50
+ 33-33333333 | WPŁATA  | PENSJA               |  7420.00
+ 33-33333333 | WPŁATA  | UMOWA O DZIEŁO       |  1480.00
+ 33-33333333 | WPŁATA  |                      |  8900.00
+ 33-33333333 | WYPŁATA | RACHUNEK ZA PRĽD     |  -650.50
+ 33-33333333 | WYPŁATA | RACHUNEK ZA TELEFON  |  -440.00
+ 33-33333333 | WYPŁATA | WYPŁATA W BANKOMACIE |  -940.00
+ 33-33333333 | WYPŁATA |                      | -2030.50
+ 33-33333333 |         |                      |  6869.50
+             |         |                      | 23848.50
+(25 rows)
+
+--zad2
+
+  nr_konta   |   typ   |   sum
+-------------+---------+----------
+ 11-11111111 | WPŁATA  |  9800.00
+ 11-11111111 | WYPŁATA | -2320.50
+ 11-11111111 |         |  7479.50
+ 22-22222222 | WPŁATA  | 11900.00
+ 22-22222222 | WYPŁATA | -2400.50
+ 22-22222222 |         |  9499.50
+ 33-33333333 | WPŁATA  |  8900.00
+ 33-33333333 | WYPŁATA | -2030.50
+ 33-33333333 |         |  6869.50
+(9 rows)
+
+--zad3
+
+  nr_konta   |   typ   |        srednia
+-------------+---------+-----------------------
+ 11-11111111 | WPŁATA  | 1400.0000000000000000
+ 11-11111111 | WYPŁATA | -257.8333333333333333
+ 11-11111111 |         |  467.4687500000000000
+ 22-22222222 | WPŁATA  | 1487.5000000000000000
+ 22-22222222 | WYPŁATA | -300.0625000000000000
+ 22-22222222 |         |  593.7187500000000000
+ 33-33333333 | WPŁATA  | 1271.4285714285714286
+ 33-33333333 | WYPŁATA | -225.6111111111111111
+ 33-33333333 |         |  429.3437500000000000
+             | WPŁATA  | 1390.9090909090909091
+             | WYPŁATA | -259.6730769230769231
+             |         |  496.8437500000000000
+(12 rows)
+
+--zad4 Wyznacz rankingi wpłat i wypłat oddzielne dla każdej kategorii dla  nr_konta = '11-11111111'.
+ rank | dense_rank |      kategoria       |    data    |  kwota
+------+------------+----------------------+------------+---------
+    1 |          1 | PENSJA               | 1999-11-04 | 1800.00
+    1 |          1 | PENSJA               | 1999-12-02 | 1800.00
+    3 |          2 | PENSJA               | 2001-12-03 | 1650.00
+    4 |          3 | PENSJA               | 1997-01-03 | 1500.00
+    5 |          4 | PENSJA               | 2001-09-03 | 1400.00
+    1 |          1 | RACHUNEK ZA PRĽD     | 1999-12-24 | -120.50
+    2 |          2 | RACHUNEK ZA PRĽD     | 2001-07-16 | -600.00
+    1 |          1 | RACHUNEK ZA TELEFON  | 2000-01-19 | -150.00
+    1 |          1 | RACHUNEK ZA TELEFON  | 1998-05-22 | -150.00
+    3 |          2 | RACHUNEK ZA TELEFON  | 2001-09-29 | -250.00
+    1 |          1 | UMOWA O DZIEŁO       | 2000-05-03 |  900.00
+    2 |          2 | UMOWA O DZIEŁO       | 1997-02-02 |  750.00
+    1 |          1 | WYPŁATA W BANKOMACIE | 1997-01-12 | -100.00
+    2 |          2 | WYPŁATA W BANKOMACIE | 2001-07-24 | -150.00
+    3 |          3 | WYPŁATA W BANKOMACIE | 1999-12-24 | -300.00
+    4 |          4 | WYPŁATA W BANKOMACIE | 2002-01-05 | -500.00
+(16 rows)
+
+--zad5  trzy największe wpłaty bez użycia słowa kluczowego LIMIT
+   kwota  |    data    |  nr_konta
+---------+------------+-------------
+ 2090.00 | 2001-07-02 | 22-22222222
+ 1980.00 | 2001-05-04 | 22-22222222
+ 1820.00 | 2003-04-03 | 22-22222222
+(3 rows)

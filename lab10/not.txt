@@ -99,5 +99,3 @@ int main(){
     return EXIT_SUCCESS;
  }
 }
-
-przy wypisywaniu wyników chcę mieć dostęp do informacji o typie pola tak, by móc je odpowiednio wypisać funkcją printf (np %d dla int, %lf dla double, %s dla text etc.)
