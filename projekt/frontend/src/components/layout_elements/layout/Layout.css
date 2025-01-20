@@ -1,0 +1,22 @@
+#wrapper {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+#outlet {
+    /*margin-top: 60px;*/
+    flex: 1 0 auto;
+}
+
+@media (max-width: 600px) {
+    #outlet {
+        margin: 51px 0 0;
+    }
+}
+@media (min-width: 600px) {
+    #outlet {
+        margin: 56px 0 0;
+    }
+}
