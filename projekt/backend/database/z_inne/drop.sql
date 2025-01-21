@@ -1,1 +1,0 @@
-DROP SCHEMA biblioteka CASCADE;

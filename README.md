@@ -1,2 +1,2 @@
 # Bazy-Danych-1
-AGH Databases course
+AGH Databases 1 course labs
